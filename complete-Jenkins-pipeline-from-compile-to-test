@@ -1,0 +1,62 @@
+pipeline {
+    agent any
+    tools {
+        maven 'M2_HOME'
+    }
+    stages {
+        stage('Hello') {
+            steps {
+                echo 'Hello World'
+            }
+        }
+        stage('compile') {
+            steps {
+                echo 'compiling..'
+                git 'https://github.com/atabongfontem/samplejavaapp.git'
+                sh '/opt/maven/apache-maven-3.8.3/bin/mvn compile'
+            }
+        }
+        stage('codereview-pmd') {
+            steps {
+                echo 'codereview..'
+                sh '/opt/maven/apache-maven-3.8.3/bin/mvn -P metrics pmd:pmd'
+            }
+        }
+        stage('unit-test') {
+            steps {
+                echo 'unittest..'
+                sh '/opt/maven/apache-maven-3.8.3/bin/mvn test'
+            }
+        }
+        stage('codecoverage') {
+            steps {
+                echo 'coverage..'
+                sh '''/opt/maven/apache-maven-3.8.3/bin/mvn  cobertura:cobertura -Dcobertura.report.format=xml'''
+            }
+        }
+        stage('package') {
+            steps {
+                echo 'package'
+                sh '''/opt/maven/apache-maven-3.8.3/bin/mvn  package'''
+            }
+        }
+        stage('continousbuild') {
+            steps {
+                echo 'continousbuild'
+                sh 'mvn clean install package'
+            }
+        }
+        stage('continousDeploy') {
+            steps {
+                echo 'continousDeploy'
+                deploy adapters: [tomcat8(credentialsId: 'jenkins-tomcat-deployment', path: '', url: 'http://172.31.32.234:8090')], contextPath: null, war: '**/*.war'
+            }
+        }
+        stage('continoustesting') {
+            steps {
+                echo 'continoustesting'
+                git 'https://github.com/atabongfontem/TestingNew.git'
+            }
+        }
+    }
+}
