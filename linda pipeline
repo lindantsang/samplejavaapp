@@ -1,0 +1,57 @@
+pipeline {
+    agent any
+    tools {
+       maven 'M2_HOME'
+    }
+    stages {
+        stage('Hello') {
+            steps {
+                echo 'Hello World'
+            }
+        }
+        stage('download-compile') {
+            steps {
+                echo 'compile'
+                git 'https://github.com/lindantsang/samplejavaapp.git'
+                sh '/opt/maven/apache-maven-3.6.3/bin/mvn compile'
+            }
+        }
+        stage('code review') {
+            steps {
+                echo 'code review'
+                sh '/opt/maven/apache-maven-3.6.3/bin/mvn -P metrics pmd:pmd'
+            }
+        }
+        stage('testing') {
+            steps {
+                echo 'testing'
+                sh '/opt/maven/apache-maven-3.6.3/bin/mvn test'
+            }
+        }
+        stage('code coverage') {
+            steps {
+                echo 'code coverage'
+                sh '/opt/maven/apache-maven-3.6.3/bin/mvn cobertura:cobertura -Dcobertura.report.format=xml'
+            }
+        }
+        stage('package') {
+            steps {
+                echo 'package'
+                sh '/opt/maven/apache-maven-3.6.3/bin/mvn package'
+            }
+        }
+        stage('continuous build') {
+            steps {
+                echo 'continuous build'
+                sh 'mvn clean install package'
+                
+            }
+        }
+        stage('deploy to tomcat') {
+            steps {
+                echo 'deploy to tomcat'
+                deploy adapters: [tomcat8(credentialsId: 'jenkins tomcat deployment', path: '', url: 'http://172.31.30.236:8090')], contextPath: null, war: '**/*.war'
+            }
+        }
+    }
+}
